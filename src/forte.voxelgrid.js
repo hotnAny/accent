@@ -28,53 +28,117 @@ FORTE.VoxelGrid = function(scene, origin) {
 }
 
 FORTE.VoxelGrid.prototype = {
-	constructor: FORTE.VoxelGrid,
-
-	// a 3d array where '1' indicates a voxel
-	get grid() {
-		return this._grid;
-	},
-
-	// size of a voxel
-	get dim() {
-		return this._dim;
-	},
-
-	// a 1d array of all voxels meshes
-	get voxels() {
-		return this._voxels;
-	},
-
-	// a look up table for retrieving voxels
-	get table() {
-		return this._table;
-	},
-
-	// x dimension
-	get nx() {
-		return this._nx;
-	},
-
-	// y dimension
-	get ny() {
-		return this._ny;
-	},
-
-	// z dimension
-	get nz() {
-		return this._nz;
-	},
-
-	// unfiltered raw data of the grid
-	get gridRaw() {
-		return this._gridRaw;
-	},
-
-	// origin (where to start rendering the grid)
-	get origin() {
-		return this._origin;
-	}
+	constructor: FORTE.VoxelGrid
 };
+
+FORTE.VoxelGrid.prototype.voxelize = function(object, n) {
+	var toShowVoxels = false;
+	var numVoxels = 0;
+
+	// compute voxel grid properties
+	var geometry = gettg(object);
+	geometry.computeBoundingBox();
+
+	var vmin = geometry.boundingBox.min;
+	var vmax = geometry.boundingBox.max;
+
+	this._vmin = new THREE.Vector3(
+		Math.min(vmin.x, vmax.x), Math.min(vmin.y, vmax.y), Math.min(vmin.z, vmax.z));
+	this._vmax = new THREE.Vector3(
+		Math.max(vmin.x, vmax.x), Math.max(vmin.y, vmax.y), Math.max(vmin.z, vmax.z));
+
+	var maxDim = XAC.max(
+		this._vmax.x - this._vmin.x, this._vmax.y - this._vmin.y, this._vmax.z - this._vmin.z);
+
+	this._dim = maxDim / n;
+	this._nx = XAC.float2int((this._vmax.x - this._vmin.x) / this._dim);
+	this._ny = XAC.float2int((this._vmax.y - this._vmin.y) / this._dim);
+	this._nz = XAC.float2int((this._vmax.z - this._vmin.z) / this._dim);
+
+	log(this._dim, this._nx, this._ny, this._nz);
+
+	this._grid = XAC.initMDArray([this._nx, this._ny, this._nz], 0);
+
+	for (var i = 0; i < this._nx; i++) {
+		for (var j = 0; j < this._ny; j++) {
+			for (var k = 0; k < this._nz; k++) {
+				var ctrVoxel = new THREE.Vector3(
+					(i + 0.5) * this._dim, (j + 0.5) * this._dim, (k + 0.5) * this._dim).add(this._vmin);
+				// addABall(XAC.scene, ctrVoxel, 0xff0000, 0.1, 1, 8);
+
+				var counter = XAC.initMDArray([3, 2], 0);
+				for (var h = 0; h < geometry.faces.length; h++) {
+					var face = geometry.faces[h];
+					var va = geometry.vertices[face.a];
+					var vb = geometry.vertices[face.b];
+					var vc = geometry.vertices[face.c];
+
+					var ctrFace = new THREE.Vector3().addVectors(va, vb).add(vc).divideScalar(3);
+
+					for (var l = 0; l < 1; l++) {
+						var projCtrVoxel = ctrVoxel.clone();
+						var projVa = va.clone();
+						var projVb = vb.clone();
+						var projVc = vc.clone();
+
+						switch (l) {
+							// ray casting along x axis
+							case 0:
+								projCtrVoxel.x = 0;
+								projVa.x = 0;
+								projVb.x = 0;
+								projVc.x = 0;
+
+								if (XAC.isInTriangle(projCtrVoxel, projVa, projVb, projVc)) {
+									counter[l][ctrVoxel.x < ctrFace.x ? 0 : 1] += 1;
+									XAC.isInTriangle(projCtrVoxel, projVa, projVb, projVc)
+								}
+								break;
+								// ray casting along y axis
+							case 1:
+								projCtrVoxel.y = 0;
+								projVa.y = 0;
+								projVb.y = 0;
+								projVc.y = 0;
+								if (XAC.isInTriangle(projCtrVoxel, projVa, projVb, projVc)) {
+									counter[l][ctrVoxel.y < ctrFace.y ? 0 : 1] += 1;
+								}
+								break;
+								// ray casting along z axis
+							case 2:
+								projCtrVoxel.z = 0;
+								projVa.z = 0;
+								projVb.z = 0;
+								projVc.z = 0;
+								if (XAC.isInTriangle(projCtrVoxel, projVa, projVb, projVc)) {
+									counter[l][ctrVoxel.z < ctrFace.z ? 0 : 1] += 1;
+								}
+								break;
+						}
+					} // casting directions
+				} // faces
+
+				// check along the three orthogonal axes
+				var isVoxel = false;
+				for (var l = 0; l < 3; l++) {
+					if (counter[l][0] % 2 == 1 && counter[l][1] % 2 == 1) {
+						if (toShowVoxels)
+							addABall(XAC.scene, ctrVoxel, 0xff0000, this._dim / 2, 0.5, 8);
+						this._grid[i][j][k] = 1;
+						numVoxels++;
+						isVoxel = true;
+						break;
+					}
+				}
+			} // nz
+		} // ny
+	} // nx
+
+	// debugging
+	// if (toShowVoxels)
+		this._scene.remove(object)
+	log(numVoxels, 'voxels')
+}
 
 //
 //	load a .vxg file to create a voxel grid with voxel size of dim

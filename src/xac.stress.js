@@ -13,10 +13,16 @@ XAC.StressAnalysis = function(object) {
     this._fixedDofs = undefined; // boundary conditions
 
     // voxelize
+    if (this._object != undefined) {
+        this._voxelGrid = new FORTE.VoxelGrid(XAC.scene);
+        time();
+        this._voxelGrid.voxelize(this._object, 64);
+        time('voxelization')
+    }
 
     // precompute material stiffness matrix
-    var E = 1.0;    // Young's modulus
-    var nu = 0.3;   // Poisson ratio
+    var E = 1.0; // Young's modulus
+    var nu = 0.3; // Poisson ratio
     this._KE = this._computeElementStiffnessMatrix(E, nu);
 
     // this._k
@@ -127,7 +133,7 @@ XAC.StressAnalysis.prototype._computeElementStiffnessMatrix = function(E, nu) {
     ]), E / ((nu + 1) * (1 - 2 * nu)));
 
     time('compute element stiffness matrix')
-    // numeric.print(KE)
+        // numeric.print(KE)
 
     return KE;
 }

@@ -27,7 +27,7 @@ var initPanel = function() {
 		for (var i = files.length - 1; i >= 0; i--) {
 			var reader = new FileReader();
 			reader.onload = (function(e) {
-				XAC.loadStl(e.target.result);
+				XAC.loadStl(e.target.result, XAC.onLoaded);
 			});
 			reader.readAsBinaryString(files[i]);
 		}
