@@ -11,10 +11,15 @@ var XAC = XAC || {};
 function log() {
 	var strLog = "";
 	for (var i = 0; i < arguments.length; i++) {
-		strLog += arguments[i] + ' '
+		if (typeof arguments[i] === 'object') {
+			for (key in arguments[i]) {
+				strLog += key + ': ' + arguments[i][key] + '\n';
+			}
+		} else {
+			strLog += arguments[i] + ' '
+		}
 	}
 	console.log(strLog)
-	// console.log(arguments);
 }
 
 function time(desc) {
@@ -27,8 +32,180 @@ function time(desc) {
 }
 
 //
-//	load models from stl binary/ascii data
+//	create a multi-dimensional array specified by <dims> with <val>
 //
+XAC.initMDArray = function(dims, val) {
+	if (dims.length == 1) {
+		return new Array(dims[0]).fill(val);
+	}
+
+	var array = [];
+	for (var i = 0; i < dims[0]; i++) {
+		array.push(XAC.initMDArray(dims.slice(1), val));
+	}
+	return array;
+}
+
+//
+//	float to int conversion
+//
+XAC.float2int = function(value) {
+	return value | 0;
+}
+
+//	........................................................................................................
+//
+//	visual debugging routines
+//
+//	........................................................................................................
+
+// add a ball (for visual debugging)
+function addABall(scene, pt, clr, radius, opacity, fn) {
+	scene = scene == undefined ? XAC.scene : scene;
+	clr = clr == undefined ? 0xff0000 : clr;
+	radius = radius == undefined ? 1 : radius;
+	opacity = opacity == undefined ? 1 : opacity;
+	fn = fn == undefined ? 32 : fn;
+
+	var geometry = new THREE.SphereGeometry(radius, fn, fn);
+	var material = new THREE.MeshBasicMaterial({
+		color: clr,
+		transparent: true,
+		opacity: opacity
+	});
+	var ball = new THREE.Mesh(geometry, material);
+	ball.position.set(pt.x, pt.y, pt.z);
+
+	scene.add(ball);
+
+	return ball;
+}
+
+function addAnArrow(v1, dir, len) {
+	var flipped = len < 0;
+
+	var rArrow = 1.5;
+	var lArrow = len == undefined ? 100 : Math.abs(len);
+	var bodyArrow = new XAC.Cylinder(rArrow, lArrow, MATERIALFOCUS).m;
+
+	var rArrowHead = rArrow * 5;
+	var headArrow = new XAC.Cylinder({
+		r1: 0,
+		r2: rArrowHead
+	}, rArrowHead * 2, MATERIALFOCUS).m;
+	headArrow.position.add(new THREE.Vector3(0, 1, 0).multiplyScalar(lArrow * 0.5 + rArrowHead));
+
+	var arrow = new THREE.Object3D();
+	arrow.add(bodyArrow);
+	arrow.add(headArrow);
+
+	rotateObjTo(arrow, dir.clone().normalize().multiplyScalar(flipped == true ? -1 : 1));
+	arrow.position.copy(v1.clone().add(
+		dir.clone().normalize().multiplyScalar(lArrow * 0.5 + (flipped == true ?
+			rArrowHead * 2 : 0))));
+
+	XAC.scene.add(arrow);
+	return arrow;
+}
+
+//	........................................................................................................
+//
+//  extensions for javascript array class
+//
+//	........................................................................................................
+
+Array.prototype.clone = function() {
+	var arr = [];
+	for (var i = 0; i < this.length; i++) {
+		arr.push(this[i]);
+	}
+	return arr;
+}
+
+Array.prototype.add = function(arr, sign) {
+	if (arr == undefined) return;
+	sign = sign || 1;
+	var len = Math.min(this.length, arr.length);
+	for (var i = 0; i < len; i++) {
+		this[i] += sign * arr[i];
+	}
+	return this;
+}
+
+Array.prototype.addScalar = function(s) {
+	for (var i = 0; i < this.length; i++) {
+		this[i] += s;
+	}
+	return this;
+}
+
+Array.prototype.sub = function(arr) {
+	return this.add(arr, -1);
+}
+
+Array.prototype.times = function(s) {
+	for (var i = 0; i < this.length; i++) {
+		this[i] *= s;
+	}
+	return this;
+}
+
+Array.prototype.copy = function(arr) {
+	this.splice(0, this.length);
+	for (var i = 0; i < arr.length; i++) {
+		this.push(arr[i]);
+	}
+}
+
+Array.prototype.remove = function(elm, compFunc) {
+	var toRemove = [];
+	for (var i = this.length - 1; i >= 0; i--) {
+		var equal = undefined;
+		if (compFunc != undefined) {
+			equal = compFunc(elm, this[i]);
+		} else {
+			equal = elm == this[i];
+		}
+
+		if (equal) {
+			toRemove.push(i);
+		}
+	}
+
+	for (var i = toRemove.length - 1; i >= 0; i--) {
+		this.splice(toRemove[i], 1);
+	}
+}
+
+Array.prototype.stitch = function(sep) {
+	var str = '';
+	for (var i = this.length - 1; i >= 0; i--) {
+		str = this[i] + (i < this.length - 1 ? sep : '') + str;
+	}
+	return str;
+}
+
+
+//	........................................................................................................
+//
+//  i/o related
+//
+//	........................................................................................................
+
+// based on: https://codepen.io/KryptoniteDove/post/load-json-file-locally-using-pure-javascript
+XAC.loadJSON = function(path, callback) {
+	var xobj = new XMLHttpRequest();
+	xobj.overrideMimeType("application/json");
+	xobj.open('GET', path, true); // Replace 'my_data' with the path to your file
+	xobj.onreadystatechange = function() {
+		if (xobj.readyState == 4 && xobj.status == "200") {
+			callback(xobj.responseText);
+		}
+	};
+	xobj.send(null);
+}
+
+//	load models from stl binary/ascii data
 XAC.loadStl = function(data, onLoaded) {
 	var stlLoader = new THREE.STLLoader();
 	var geometry = stlLoader.parse(data);
@@ -64,98 +241,5 @@ XAC.loadStl = function(data, onLoaded) {
 
 	if (onLoaded != undefined) {
 		onLoaded(object);
-	}
-}
-
-//
-//	create a multi-dimensional array specified by <dims> with <val>
-//
-XAC.initMDArray = function(dims, val) {
-	if (dims.length == 1) {
-		return new Array(dims[0]).fill(val);
-	}
-
-	var array = [];
-	for (var i = 0; i < dims[0]; i++) {
-		array.push(XAC.initMDArray(dims.slice(1), val));
-	}
-	return array;
-}
-
-//
-//	float to int conversion
-//
-XAC.float2int = function(value) {
-	return value | 0;
-}
-
-//
-//	add a ball (for visual debugging)
-//
-function addABall(scene, pt, clr, radius, opacity, fn) {
-	scene = scene == undefined ? XAC.scene : scene;
-	clr = clr == undefined ? 0xff0000 : clr;
-	radius = radius == undefined ? 1 : radius;
-	opacity = opacity == undefined ? 1 : opacity;
-	fn = fn == undefined ? 32 : fn;
-
-	var geometry = new THREE.SphereGeometry(radius, fn, fn);
-	var material = new THREE.MeshBasicMaterial({
-		color: clr,
-		transparent: true,
-		opacity: opacity
-	});
-	var ball = new THREE.Mesh(geometry, material);
-	ball.position.set(pt.x, pt.y, pt.z);
-
-	scene.add(ball);
-
-	return ball;
-}
-
-//
-//  extensions for javascript array class
-//
-
-Array.prototype.clone = function() {
-	var arr = [];
-	for (var i = 0; i < this.length; i++) {
-		arr.push(this[i]);
-	}
-	return arr;
-}
-
-Array.prototype.add = function(arr, sign) {
-	if(arr == undefined) return;
-	sign = sign || 1;
-	var len = Math.min(this.length, arr.length);
-	for(var i=0; i<len; i++) {
-		this[i] += sign * arr[i];
-	}
-	return this;
-}
-
-Array.prototype.addScalar = function(s) {
-	for(var i=0; i<this.length; i++) {
-		this[i] += s;
-	}
-	return this;
-}
-
-Array.prototype.sub = function(arr) {
-	return this.add(arr, -1);
-}
-
-Array.prototype.times = function(s) {
-	for(var i=0; i<this.length; i++) {
-		this[i] *= s;
-	}
-	return this;
-}
-
-Array.prototype.copy = function(arr) {
-	this.splice(0, this.length);
-	for (var i = 0; i < arr.length; i++) {
-		this.push(arr[i]);
 	}
 }

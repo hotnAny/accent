@@ -15,20 +15,33 @@
 
 var XAC = XAC || {};
 
-var BACKGROUNDCOLOR = 0xF2F0F0;
-var GROUNDCOLOR = 0xF2F0F0;
-var GRIDCOLOR = 0x888888;
-
-var COLORNORMAL = 0xDB5B8A; // the normal color
-var COLORCONTRAST = 0xD1D6E7; // is the contrast of the COLORNORMAL
-
+// var BACKGROUNDCOLOR = 0xF2F0F0;
+// var GROUNDCOLOR = 0xF2F0F0;
+// var GRIDCOLOR = 0x888888;
+//
+// var COLORNORMAL = 0xDB5B8A; // the normal color
+// var COLORCONTRAST = 0xD1D6E7; // is the contrast of the COLORNORMAL
+// var COLORHIGHLIGHT = 0xE82C0C;
+//
 var WIDTHPANEL = 388;
-
-var MATERIALNORMAL = new THREE.MeshPhongMaterial({
-    color: COLORNORMAL,
-    transparent: true,
-    opacity: 0.75
-});
+//
+// var MATERIALNORMAL = new THREE.MeshPhongMaterial({
+//     color: COLORNORMAL,
+//     transparent: true,
+//     opacity: 0.75
+// });
+//
+// var MATERIALCONTRAST = new THREE.MeshPhongMaterial({
+//     color: COLORCONTRAST,
+//     transparent: true,
+//     opacity: 0.75
+// });
+//
+// var MATERIALHIGHLIGHT = new THREE.MeshPhongMaterial({
+//     color: COLORHIGHLIGHT,
+//     transparent: true,
+//     opacity: 0.95
+// });
 
 $(document).ready(function() {
     //
@@ -58,7 +71,7 @@ $(document).ready(function() {
     //
     // draw ground
     //
-    var yOffset = 1;
+    var yOffset = 50;
 
     var groundMaterial = new THREE.MeshBasicMaterial({
         color: GROUNDCOLOR,

@@ -92,6 +92,9 @@ function rotateObjTo(obj, dir, isReversed) {
 	var yUp = new THREE.Vector3(0, 1, 0);
 	var angleToRotate = yUp.angleTo(dir);
 	var axisToRotate = new THREE.Vector3().crossVectors(yUp, dir).normalize();
+	if(axisToRotate.length() == 0) {
+		axisToRotate.x = 1;
+	}
 	obj.rotateOnAxis(axisToRotate, isReversed == true ? angleToRotate * -1 : angleToRotate);
 }
 

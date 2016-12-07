@@ -28,15 +28,14 @@ var initPanel = function() {
 			var reader = new FileReader();
 			if (files[i].name.endsWith('stl')) {
 				reader.onload = (function(e) {
-					XAC.loadStl(e.target.result, FORTE.onLoaded);
+					XAC.loadStl(e.target.result, FORTE._onStlLoaded);
 				});
 			} else if (files[i].name.endsWith('vxg')) {
 				reader.onload = (function(e) {
-					// if (FORTE.stressAnalysis == undefined) {
 					var voxelGrid = new FORTE.VoxelGrid(XAC.scene);
-					// FORTE.stressAnalysis = new XAC.StressAnalysis();
 					voxelGrid.load(e.target.result, 2);
-					voxelGrid.render();
+					voxelGrid.renderContour();
+					FORTE._onVxgLoaded(voxelGrid);
 				});
 			}
 			reader.readAsBinaryString(files[i]);

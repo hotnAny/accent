@@ -1,23 +1,44 @@
 var FORTE = FORTE || {};
 
 FORTE._test = function() {
-
     // var A = XAC.initMDArray([24, 24], 0);
     // var B = [[1, 2, 3, 4], [1, 2, 3, 4], [1, 2, 3, 4], [1, 2, 3, 4]]
     // numeric.print(numeric.setBlock(A, [4, 4], [7, 7], B))
-
 }
 
-FORTE.onLoaded = function(object) {
+FORTE._onStlLoaded = function(object) {
     FORTE.stressAnalysis = new XAC.StressAnalysis(object);
     // XAC.scene.remove(object);
+}
+
+FORTE._onVxgLoaded = function(voxelGrid) {
+    FORTE._topyUI = new XAC.TopyUI('things/tpd.json');
+    FORTE._topyUI.setVoxelGrid(voxelGrid);
+    FORTE._topyUI.setLoad([
+        [XAC.float2int(voxelGrid._nx / 2), 0, voxelGrid._nz - 1]
+    ], [0, -1, 0]);
+
+    var boundaryVoxels = [];
+    for (var i = 0; i < voxelGrid._nx; i++) {
+        for (var j = 0; j < voxelGrid._ny; j++) {
+            boundaryVoxels.push([i, j, 0]);
+        }
+    }
+    FORTE._topyUI.setBoundary(boundaryVoxels)
 }
 
 $(document).on('keydown', function(e) {
     log('key down')
     switch (e.keyCode) {
         case 83: // S
-            FORTE.stressAnalysis._voxelGrid.save(time() + '.vxg');
+            if (e.ctrlKey) {
+                FORTE._topyUI.saveTpd(time() + '.tpd');
+            } else {
+                FORTE.stressAnalysis._voxelGrid.save(time() + '.vxg');
+            }
+            break;
+        case 49: // 1
+
             break;
     }
 });

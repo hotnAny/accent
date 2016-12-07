@@ -16,7 +16,7 @@ XAC.StressAnalysis = function(object) {
     if (this._object != undefined) {
         this._voxelGrid = new FORTE.VoxelGrid(XAC.scene);
         time();
-        this._voxelGrid.voxelize(this._object, 64);
+        this._voxelGrid.voxelize(this._object, 32);
         time('voxelization')
     }
 
@@ -40,7 +40,7 @@ XAC.StressAnalysis.prototype.analyze = function() {
 
     // update stiffness matrix for all elements
 
-    // solve KU = F
+    // deal with boundary condition and solve KU = F
 
     // compute strain
 
