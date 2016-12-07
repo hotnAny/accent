@@ -23,6 +23,7 @@ function time(desc) {
 		console.info(desc + ': ' + (t - XAC.t) + ' ms');
 	}
 	XAC.t = t;
+	return t;
 }
 
 //
@@ -110,4 +111,51 @@ function addABall(scene, pt, clr, radius, opacity, fn) {
 	scene.add(ball);
 
 	return ball;
+}
+
+//
+//  extensions for javascript array class
+//
+
+Array.prototype.clone = function() {
+	var arr = [];
+	for (var i = 0; i < this.length; i++) {
+		arr.push(this[i]);
+	}
+	return arr;
+}
+
+Array.prototype.add = function(arr, sign) {
+	if(arr == undefined) return;
+	sign = sign || 1;
+	var len = Math.min(this.length, arr.length);
+	for(var i=0; i<len; i++) {
+		this[i] += sign * arr[i];
+	}
+	return this;
+}
+
+Array.prototype.addScalar = function(s) {
+	for(var i=0; i<this.length; i++) {
+		this[i] += s;
+	}
+	return this;
+}
+
+Array.prototype.sub = function(arr) {
+	return this.add(arr, -1);
+}
+
+Array.prototype.times = function(s) {
+	for(var i=0; i<this.length; i++) {
+		this[i] *= s;
+	}
+	return this;
+}
+
+Array.prototype.copy = function(arr) {
+	this.splice(0, this.length);
+	for (var i = 0; i < arr.length; i++) {
+		this.push(arr[i]);
+	}
 }

@@ -26,9 +26,19 @@ var initPanel = function() {
 
 		for (var i = files.length - 1; i >= 0; i--) {
 			var reader = new FileReader();
-			reader.onload = (function(e) {
-				XAC.loadStl(e.target.result, XAC.onLoaded);
-			});
+			if (files[i].name.endsWith('stl')) {
+				reader.onload = (function(e) {
+					XAC.loadStl(e.target.result, FORTE.onLoaded);
+				});
+			} else if (files[i].name.endsWith('vxg')) {
+				reader.onload = (function(e) {
+					// if (FORTE.stressAnalysis == undefined) {
+					var voxelGrid = new FORTE.VoxelGrid(XAC.scene);
+					// FORTE.stressAnalysis = new XAC.StressAnalysis();
+					voxelGrid.load(e.target.result, 2);
+					voxelGrid.render();
+				});
+			}
 			reader.readAsBinaryString(files[i]);
 		}
 

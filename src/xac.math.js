@@ -171,3 +171,17 @@ XAC.isInTriangle = function(v, va, vb, vc) {
         XAC.onSameSide(v, vb, va, vc) &&
         XAC.onSameSide(v, vc, va, vb);
 }
+
+//
+//  force an input val to be between vmin and vmax
+//
+XAC.clamp = function(val, vmin, vmax) {
+	if(vmin > vmax) {
+		var vtmp = vmin;
+		vmin = vmax;
+		vmax = vtmp;
+	}
+	val = Math.max(vmin, val);
+	val = Math.min(val, vmax);
+	return val;
+}

@@ -145,5 +145,5 @@ $(document).ready(function() {
 
     render();
 
-    XAC._test();
+    FORTE._test();
 });

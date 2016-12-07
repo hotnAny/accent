@@ -1,7 +1,7 @@
 /*------------------------------------------------------------------------------------*
  *
  * graphics-related library, based on three.js
- * 
+ *
  * by xiang 'anthony' chen, xiangchen@acm.org
  *
  *------------------------------------------------------------------------------------*/
@@ -153,6 +153,10 @@ function markVertexNeighbors(obj) {
 		addABall(vn, 0x444444, 0.3);
 	}
 }
+
+ XAC.getTransformedGeometry = function(mesh) {
+	 return gettg(mesh);
+ }
 
 /*
 	get the geometry from a mesh with transformation matrix applied

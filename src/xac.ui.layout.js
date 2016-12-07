@@ -1,7 +1,7 @@
 /*------------------------------------------------------------------------------------*
  *
  * ui layout (widgets and controls), based on jquery
- * 
+ *
  * by xiang 'anthony' chen, xiangchen@acm.org
  *
  *------------------------------------------------------------------------------------*/
@@ -18,7 +18,7 @@ panel.css('font-size', '12px');
 panel.css('overflow', 'auto');
 
 var title = $('<h3></h3>');
-title.html('TEMPLATE');
+title.html('FORTÉ');
 title.css('margin-top', '10px');
 title.css('margin-bottom', '10px');
 title.css('margin-left', '10px');

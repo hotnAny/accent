@@ -31,8 +31,12 @@ FORTE.VoxelGrid.prototype = {
 	constructor: FORTE.VoxelGrid
 };
 
+//
+// voxelize an object (internally, not just the surface)
+//
 FORTE.VoxelGrid.prototype.voxelize = function(object, n) {
-	var toShowVoxels = false;
+	var TOSHOWVOXELS = false;
+	var NUMDIR = 3;
 	var numVoxels = 0;
 
 	// compute voxel grid properties
@@ -75,15 +79,15 @@ FORTE.VoxelGrid.prototype.voxelize = function(object, n) {
 
 					var ctrFace = new THREE.Vector3().addVectors(va, vb).add(vc).divideScalar(3);
 
-					for (var l = 0; l < 1; l++) {
+					for (var l = 0; l < NUMDIR; l++) {
 						var projCtrVoxel = ctrVoxel.clone();
 						var projVa = va.clone();
 						var projVb = vb.clone();
 						var projVc = vc.clone();
 
 						switch (l) {
-							// ray casting along x axis
-							case 0:
+
+							case 0: // ray casting along x axis
 								projCtrVoxel.x = 0;
 								projVa.x = 0;
 								projVb.x = 0;
@@ -94,8 +98,8 @@ FORTE.VoxelGrid.prototype.voxelize = function(object, n) {
 									XAC.isInTriangle(projCtrVoxel, projVa, projVb, projVc)
 								}
 								break;
-								// ray casting along y axis
-							case 1:
+
+							case 1: // ray casting along y axis
 								projCtrVoxel.y = 0;
 								projVa.y = 0;
 								projVb.y = 0;
@@ -104,8 +108,8 @@ FORTE.VoxelGrid.prototype.voxelize = function(object, n) {
 									counter[l][ctrVoxel.y < ctrFace.y ? 0 : 1] += 1;
 								}
 								break;
-								// ray casting along z axis
-							case 2:
+
+							case 2: // ray casting along z axis
 								projCtrVoxel.z = 0;
 								projVa.z = 0;
 								projVb.z = 0;
@@ -115,14 +119,14 @@ FORTE.VoxelGrid.prototype.voxelize = function(object, n) {
 								}
 								break;
 						}
-					} // casting directions
-				} // faces
+					} // end casting directions
+				} // end faces
 
 				// check along the three orthogonal axes
 				var isVoxel = false;
-				for (var l = 0; l < 3; l++) {
+				for (var l = 0; l < NUMDIR; l++) {
 					if (counter[l][0] % 2 == 1 && counter[l][1] % 2 == 1) {
-						if (toShowVoxels)
+						if (TOSHOWVOXELS)
 							addABall(XAC.scene, ctrVoxel, 0xff0000, this._dim / 2, 0.5, 8);
 						this._grid[i][j][k] = 1;
 						numVoxels++;
@@ -130,12 +134,12 @@ FORTE.VoxelGrid.prototype.voxelize = function(object, n) {
 						break;
 					}
 				}
-			} // nz
-		} // ny
-	} // nx
+			} // end nz
+		} // end ny
+	} // end nx
 
 	// debugging
-	// if (toShowVoxels)
+	if (TOSHOWVOXELS)
 		this._scene.remove(object)
 	log(numVoxels, 'voxels')
 }
@@ -182,33 +186,33 @@ FORTE.VoxelGrid.prototype.load = function(vxgRaw, dim) {
 	return this._grid;
 }
 
+FORTE.VoxelGrid.prototype.save = function(name) {
+	var strGrid = '';
+
+	for (var i = 0; i < this._nx; i++) {
+		for (var j = 0; j < this._ny; j++) {
+			for (var k = 0; k < this._nz; k++) {
+				strGrid += this._grid[i][j][k] == 1 ? '1' : '0';
+				if (k < this._nz - 1)
+					strGrid += ','
+			}
+			strGrid += '\n';
+		}
+		if (i < this._nx - 1)
+			strGrid += '\n'
+	}
+
+	var blob = new Blob([strGrid], {
+		type: "text/plain;charset=utf-8"
+	});
+	saveAs(blob, name);
+}
+
 //
 //	render voxels
 //	(only render voxels on the surface if set hideInside to be true)
 //
 FORTE.VoxelGrid.prototype.render = function(hideInside) {
-	// fix `lonely diagonals`, i.e.,
-	//  O_	=>	OO
-	//  _O		OO
-	var numPasses = 2;
-
-	while (numPasses-- > 0) {
-		for (var i = 0; i < this._nz; i++) {
-			for (var j = 0; j < this._ny; j++) {
-				for (var k = 0; k < this._nx; k++) {
-					this._fixLonelyDiag(i, j, k);
-				}
-			}
-		}
-
-		for (var i = 0; i < this._nz; i++) {
-			for (var j = 0; j < this._ny; j++) {
-				for (var k = 0; k < this._nx; k++) {
-					this._grid[i][j][k] = this._grid[i][j][k] > 0.5 ? 1 : 0;
-				}
-			}
-		}
-	}
 
 	for (var i = 0; i < this._nz; i++) {
 		this._table[i] = this._table[i] == undefined ? [] : this._table[i];

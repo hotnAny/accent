@@ -1,7 +1,6 @@
-var XAC = XAC || {};
+var FORTE = FORTE || {};
 
-XAC._test = function() {
-
+FORTE._test = function() {
 
     // var A = XAC.initMDArray([24, 24], 0);
     // var B = [[1, 2, 3, 4], [1, 2, 3, 4], [1, 2, 3, 4], [1, 2, 3, 4]]
@@ -9,10 +8,19 @@ XAC._test = function() {
 
 }
 
-XAC.onLoaded = function(object) {
-    var stressAnalysis = new XAC.StressAnalysis(object);
+FORTE.onLoaded = function(object) {
+    FORTE.stressAnalysis = new XAC.StressAnalysis(object);
     // XAC.scene.remove(object);
 }
+
+$(document).on('keydown', function(e) {
+    log('key down')
+    switch (e.keyCode) {
+        case 83: // S
+            FORTE.stressAnalysis._voxelGrid.save(time() + '.vxg');
+            break;
+    }
+});
 
 // this._scene.updateMatrixWorld();
 // object.updateMatrixWorld();
@@ -43,66 +51,90 @@ XAC.onLoaded = function(object) {
 
 
 
-	// a 3d array where '1' indicates a voxel
-	// get grid() {
-	// 	return this._grid;
-	// },
-	//
-	// // size of a voxel
-	// get dim() {
-	// 	return this._dim;
-	// },
-	//
-	// // a 1d array of all voxels meshes
-	// get voxels() {
-	// 	return this._voxels;
-	// },
-	//
-	// // a look up table for retrieving voxels
-	// get table() {
-	// 	return this._table;
-	// },
-	//
-	// // x dimension
-	// get nx() {
-	// 	return this._nx;
-	// },
-	//
-	// // y dimension
-	// get ny() {
-	// 	return this._ny;
-	// },
-	//
-	// // z dimension
-	// get nz() {
-	// 	return this._nz;
-	// },
-	//
-	// // unfiltered raw data of the grid
-	// get gridRaw() {
-	// 	return this._gridRaw;
-	// },
-	//
-	// // origin (where to start rendering the grid)
-	// get origin() {
-	// 	return this._origin;
-	// }
+// a 3d array where '1' indicates a voxel
+// get grid() {
+// 	return this._grid;
+// },
+//
+// // size of a voxel
+// get dim() {
+// 	return this._dim;
+// },
+//
+// // a 1d array of all voxels meshes
+// get voxels() {
+// 	return this._voxels;
+// },
+//
+// // a look up table for retrieving voxels
+// get table() {
+// 	return this._table;
+// },
+//
+// // x dimension
+// get nx() {
+// 	return this._nx;
+// },
+//
+// // y dimension
+// get ny() {
+// 	return this._ny;
+// },
+//
+// // z dimension
+// get nz() {
+// 	return this._nz;
+// },
+//
+// // unfiltered raw data of the grid
+// get gridRaw() {
+// 	return this._gridRaw;
+// },
+//
+// // origin (where to start rendering the grid)
+// get origin() {
+// 	return this._origin;
+// }
 
-    // face's bounding box
-    // var vminFace = new THREE.Vector3(
-    // 	XAC.min(va.x, vb.x, vc.x),
-    // 	XAC.min(va.y, vb.y, vc.y),
-    // 	XAC.min(va.z, vb.z, vc.z)
-    // );
-    // var vmaxFace = new THREE.Vector3(
-    // 	XAC.max(va.x, vb.x, vc.x),
-    // 	XAC.max(va.y, vb.y, vc.y),
-    // 	XAC.max(va.z, vb.z, vc.z)
-    // );
+// face's bounding box
+// var vminFace = new THREE.Vector3(
+// 	XAC.min(va.x, vb.x, vc.x),
+// 	XAC.min(va.y, vb.y, vc.y),
+// 	XAC.min(va.z, vb.z, vc.z)
+// );
+// var vmaxFace = new THREE.Vector3(
+// 	XAC.max(va.x, vb.x, vc.x),
+// 	XAC.max(va.y, vb.y, vc.y),
+// 	XAC.max(va.z, vb.z, vc.z)
+// );
 
-    // if ((projCtrVoxel.y - this._dim / 2 > vmaxFace.y ||
-    // 		projCtrVoxel.y + this._dim / 2 < vminFace.y) &&
-    // 	(projCtrVoxel.z - this._dim / 2 > vmaxFace.z ||
-    // 		projCtrVoxel.z + this._dim / 2 < vminFace.z)) {
-    // 	break;
-    // }
+// if ((projCtrVoxel.y - this._dim / 2 > vmaxFace.y ||
+// 		projCtrVoxel.y + this._dim / 2 < vminFace.y) &&
+// 	(projCtrVoxel.z - this._dim / 2 > vmaxFace.z ||
+// 		projCtrVoxel.z + this._dim / 2 < vminFace.z)) {
+// 	break;
+// }
+
+
+// fix `lonely diagonals`, i.e.,
+//  O_	=>	OO
+//  _O		OO
+// var numPasses = 2;
+//
+// while (numPasses-- > 0) {
+// 	for (var i = 0; i < this._nz; i++) {
+// 		for (var j = 0; j < this._ny; j++) {
+// 			for (var k = 0; k < this._nx; k++) {
+// 				this._fixLonelyDiag(i, j, k);
+// 			}
+// 		}
+// 	}
+//
+// 	for (var i = 0; i < this._nz; i++) {
+// 		for (var j = 0; j < this._ny; j++) {
+// 			for (var k = 0; k < this._nx; k++) {
+// 				this._grid[i][j][k] = this._grid[i][j][k] > 0.5 ? 1 : 0;
+// 			}
+// 		}
+// 	}
+// }
