@@ -55,10 +55,7 @@ XAC.TopyUI.prototype.setVoxelGrid = function(voxelGrid) {
 
 XAC.TopyUI.prototype.setLoad = function(indices, value) {
     for (var i = 0; i < indices.length; i++) {
-
         for (var j = this._axes.length - 1; j >= 0; j--) {
-            // if (value[j] == 0)
-            //     continue;
             var nodes = this._compactElm2Nodes(indices[i]);
             this._loadNodes[this._axes[j]] = this._loadNodes[this._axes[j]].concat(nodes);
             this._loadValues[this._axes[j]].push(value[j] + '@' + nodes.length);

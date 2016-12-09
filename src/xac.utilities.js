@@ -12,8 +12,19 @@ function log() {
 	var strLog = "";
 	for (var i = 0; i < arguments.length; i++) {
 		if (typeof arguments[i] === 'object') {
-			for (key in arguments[i]) {
-				strLog += key + ': ' + arguments[i][key] + '\n';
+			if (Array.isArray(arguments[i])) {
+				if (arguments[i][0].length > 0) {
+					for (var j = 0; j < arguments[i].length; j++) {
+						log(arguments[i][j]);
+					}
+				} else {
+					strLog += arguments[i] + '\n';
+				}
+			} else {
+				for (key in arguments[i]) {
+					log(typeof arguments[i][key])
+					strLog += key + ': ' + arguments[i][key] + '\n';
+				}
 			}
 		} else {
 			strLog += arguments[i] + ' '
@@ -185,6 +196,45 @@ Array.prototype.stitch = function(sep) {
 	return str;
 }
 
+Array.prototype.dimension = function() {
+	var dim = [];
+	var arr = this;
+	while (arr.length != undefined) {
+		dim.push(arr.length);
+		arr = arr[0];
+	}
+	return dim;
+}
+
+Array.prototype.equals = function(arr) {
+	if (this.length != arr.length) {
+		return false;
+	}
+
+	for (var i = this.length - 1; i >= 0; i--) {
+		if (this[i] != arr[i]) {
+			return false;
+		}
+	}
+	return true;
+}
+
+// similar to numpy's take https://docs.scipy.org/doc/numpy/reference/generated/numpy.take.html
+// arrIndex is of this form:
+//	[[x1, ..., xn], [y1, ..., yn], ... ], where, e.g.,
+// 	[[x1, ..., xn] means along the 1st dim of this array, only consider x1-th, ... xn-th hyper-rows
+Array.prototype.take = function(arrIndex) {
+	var taken = [];
+	for (var i = 0; i < arrIndex[0].length; i++) {
+		var idx = arrIndex[0][i];
+		if (arrIndex[1] != undefined) {
+			taken.push(this[idx].take(arrIndex.slice(1)))
+		} else {
+			taken.push(this[idx]);
+		}
+	}
+	return taken;
+}
 
 //	........................................................................................................
 //
