@@ -15,13 +15,13 @@ FORTE._onVxgLoaded = function(voxelGrid) {
     FORTE._topyUI = new XAC.TopyUI('things/tpd.json');
     FORTE._topyUI.setVoxelGrid(voxelGrid);
     FORTE._topyUI.setLoad([
-        [XAC.float2int(voxelGrid._nx / 2), 0, voxelGrid._nz - 1]
+        [voxelGrid._nx - 1, 0, XAC.float2int(voxelGrid._nz / 2)]
     ], [0, -1, 0]);
 
     var boundaryVoxels = [];
-    for (var i = 0; i < voxelGrid._nx; i++) {
+    for (var i = 0; i < voxelGrid._nz; i++) {
         for (var j = 0; j < voxelGrid._ny; j++) {
-            boundaryVoxels.push([i, j, 0]);
+            boundaryVoxels.push([0, j, i]);
         }
     }
     FORTE._topyUI.setBoundary(boundaryVoxels)

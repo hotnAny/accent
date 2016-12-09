@@ -63,11 +63,11 @@ FORTE.VoxelGrid.prototype.voxelize = function(object, n) {
 
 	this._grid = XAC.initMDArray([this._nx, this._ny, this._nz], 0);
 
-	for (var i = 0; i < this._nx; i++) {
+	for (var i = 0; i < this._nz; i++) {
 		for (var j = 0; j < this._ny; j++) {
-			for (var k = 0; k < this._nz; k++) {
+			for (var k = 0; k < this._nx; k++) {
 				var ctrVoxel = new THREE.Vector3(
-					(i + 0.5) * this._dim, (j + 0.5) * this._dim, (k + 0.5) * this._dim).add(this._vmin);
+					(k + 0.5) * this._dim, (j + 0.5) * this._dim, (i + 0.5) * this._dim).add(this._vmin);
 				// addABall(XAC.scene, ctrVoxel, 0xff0000, 0.1, 1, 8);
 
 				var counter = XAC.initMDArray([3, 2], 0);
@@ -200,16 +200,16 @@ FORTE.VoxelGrid.prototype.load = function(vxgRaw, dim) {
 FORTE.VoxelGrid.prototype.save = function(name) {
 	var strGrid = this._dim + '\n';
 
-	for (var i = 0; i < this._nx; i++) {
+	for (var i = 0; i < this._nz; i++) {
 		for (var j = 0; j < this._ny; j++) {
-			for (var k = 0; k < this._nz; k++) {
+			for (var k = 0; k < this._nx; k++) {
 				strGrid += this._grid[i][j][k] == 1 ? '1' : '0';
-				if (k < this._nz - 1)
+				if (k < this._nx - 1)
 					strGrid += ','
 			}
 			strGrid += '\n';
 		}
-		if (i < this._nx - 1)
+		if (i < this._nz - 1)
 			strGrid += '\n'
 	}
 

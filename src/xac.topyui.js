@@ -19,6 +19,8 @@ XAC.TopyUI = function(jsonPath) {
     this._fxtrNodes = new Array();
     this._loadNodes = new Array();
     this._loadValues = new Array();
+    this._fixedNodes = []; // elements occupied by an object
+    this._removedNodes = []; // the rest of the 'empty' elements
 
     for (var i = this._axes.length - 1; i >= 0; i--) {
         this._fxtrNodes[this._axes[i]] = [];
@@ -36,6 +38,19 @@ XAC.TopyUI.prototype.setVoxelGrid = function(voxelGrid) {
     this._tpd['NUM_ELEM_X'] = this._voxelGrid._nx;
     this._tpd['NUM_ELEM_Y'] = this._voxelGrid._ny;
     this._tpd['NUM_ELEM_Z'] = this._voxelGrid._nz;
+
+    for (var i = 0; i < voxelGrid._nz; i++) {
+        for (var j = 0; j < voxelGrid._ny; j++) {
+            for (var k = 0; k < voxelGrid._nx; k++) {
+                var nodes = this._getElmNum([k, j, i]);
+                if (voxelGrid._grid[i][j][k] == 1) {
+                    this._fixedNodes.push(nodes);
+                } else {
+                    this._removedNodes.push(nodes);
+                }
+            }   // nz
+        }   // ny
+    }   // nx
 };
 
 XAC.TopyUI.prototype.setLoad = function(indices, value) {
@@ -94,8 +109,8 @@ XAC.TopyUI.prototype._updateTpd = function() {
         this._tpd['LOAD_VALU_' + this._axes[i]] = this._loadValues[this._axes[i]].stitch(';');
     }
 
-    // this._tpd['ACTV_ELEM'] = stitch(fixedNodes, ';');
-    // this._tpd['PASV_ELEM'] = stitch(removedNodes, ';');
+    this._tpd['ACTV_ELEM'] = this._fixedNodes.stitch(';');
+    this._tpd['PASV_ELEM'] = this._removedNodes.stitch(';');
 };
 
 XAC.TopyUI.prototype._compactElm2Nodes = function(index) {
@@ -144,3 +159,18 @@ XAC.TopyUI.prototype._elm2nodes2d = function(nelx, nely, mpx, mpy) {
     var nn = inn.clone().addScalar(en + mpx - 1);
     return nn;
 }
+
+XAC.TopyUI.prototype._getElmNum = function(index) {
+    var nelx = parseInt(this._tpd['NUM_ELEM_X']);
+    var nely = parseInt(this._tpd['NUM_ELEM_Y']);
+    var nelz = parseInt(this._tpd['NUM_ELEM_Z']);
+
+    var mpx = index[0] + 1;
+    var mpy = index[1] + 1;
+    var mpz = index[2] + 1;
+
+    var enback = nely * (mpx - 1) + mpy;
+    log(mpx, mpy, mpz, '->', enback + nelx * nely * (mpz - 1))
+    return enback + nelx * nely * (mpz - 1);
+}
+//
