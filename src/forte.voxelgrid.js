@@ -12,7 +12,7 @@ var FORTE = FORTE || {};
 //
 FORTE.VoxelGrid = function(scene, origin) {
 	this._scene = scene;
-	this._origin = origin;
+	this._origin = origin == undefined ? new THREE.Vector3() : origin;
 
 	this._voxels = [];
 	this._table = [];
@@ -217,6 +217,15 @@ FORTE.VoxelGrid.prototype.save = function(name) {
 		type: "text/plain;charset=utf-8"
 	});
 	saveAs(blob, name);
+}
+
+FORTE.VoxelGrid.prototype.getBoundingSphereInfo = function() {
+	var vRadius = new THREE.Vector3(this._nx, this._ny, this._nz).multiplyScalar(this._dim * 0.5);
+	var center = this._origin.clone().add(vRadius);
+	return {
+		center: center,
+		vRadius: vRadius
+	};
 }
 
 //

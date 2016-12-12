@@ -167,7 +167,7 @@ XAC.TopyUI.prototype._getElmNum = function(index) {
     var mpz = index[2] + 1;
 
     var enback = nely * (mpx - 1) + mpy;
-    log(mpx, mpy, mpz, '->', enback + nelx * nely * (mpz - 1))
+    // log(mpx, mpy, mpz, '->', enback + nelx * nely * (mpz - 1))
     return enback + nelx * nely * (mpz - 1);
 }
 //

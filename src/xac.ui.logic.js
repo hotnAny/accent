@@ -8,7 +8,7 @@
 
 var XAC = XAC || {};
 
-$(document.body).append(panel);
+// $(document.body).append(panel);
 
 var initPanel = function() {
 	$(document).on('dragover', function(e) {
@@ -35,6 +35,13 @@ var initPanel = function() {
 					var voxelGrid = new FORTE.VoxelGrid(XAC.scene);
 					voxelGrid.load(e.target.result, 2);
 					voxelGrid.renderContour();
+
+					var boundingSphereInfo = voxelGrid.getBoundingSphereInfo();
+					var r = boundingSphereInfo.vRadius.length();
+					XAC.camera.position.copy(XAC.posCam.clone().normalize().multiplyScalar(r * 2));
+					XAC.mouseCtrls = new THREE.TrackballControls(XAC.camera, undefined, boundingSphereInfo.center);
+
+
 					FORTE._onVxgLoaded(voxelGrid);
 				});
 			}

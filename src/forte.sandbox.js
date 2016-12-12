@@ -10,19 +10,23 @@ FORTE._test = function() {
     // log(a.dimension().equals([3, 2]))
     // log(a)
 
-    var A = [
-        [2, 1, 4, 3],
-        [1, 4, 5, 2],
-        [2, 1, 3, 1],
-        [5, 2, 4, 3]
-    ];
-    var a = [0, 1, 3];
-    var c = [2, 3, 1]
-    log(A.take([a, c]));
+    // var A = [
+    //     [2, 1, 4, 3],
+    //     [1, 4, 5, 2],
+    //     [2, 1, 3, 1],
+    //     [5, 2, 4, 3]
+    // ];
+    // var a = [0, 1, 3];
+    // var c = [2, 3, 1]
+    // log(A.take([a, c]));
+    //
+    // var B = [2, 1, 0, 5, 3, 4];
+    // var b = [0, 4, 2];
+    // log(B.take([b]))
 
-    var B = [2, 1, 0, 5, 3, 4];
-    var b = [0, 4, 2];
-    log(B.take([b]))
+    // var x = XAC.initMDArray([3, 4], 0);
+    // log(x[1, 2])
+    // log(x[1][2])
 }
 
 FORTE._onStlLoaded = function(object) {
@@ -36,7 +40,7 @@ FORTE._onVxgLoaded = function(voxelGrid) {
     // FORTE._topyUI.setLoad([
     //     [voxelGrid._nx - 1, 0, XAC.float2int(voxelGrid._nz / 2)]
     // ], [0, -1, 0]);
-    //
+
     // var boundaryVoxels = [];
     // for (var i = 0; i < voxelGrid._nz; i++) {
     //     for (var j = 0; j < voxelGrid._ny; j++) {
@@ -46,12 +50,18 @@ FORTE._onVxgLoaded = function(voxelGrid) {
     // FORTE._topyUI.setBoundary(boundaryVoxels)
 
     FORTE.stressAnalysis = new XAC.StressAnalysis();
+    // FORTE._topyUI = new XAC.TopyUI('things/tpd.json');
+
     FORTE.stressAnalysis.setVoxelGrid(voxelGrid);
+    // FORTE._topyUI.setVoxelGrid(voxelGrid);
 
     // load
     FORTE.stressAnalysis.setLoad([
         [voxelGrid._nx - 1, 0, XAC.float2int(voxelGrid._nz / 2)]
     ], [0, -1, 0]);
+    // FORTE._topyUI.setLoad([
+    //     [voxelGrid._nx - 1, 0, XAC.float2int(voxelGrid._nz / 2)]
+    // ], [0, -1, 0]);
 
     // boundary
     var boundaryVoxels = [];
@@ -61,7 +71,9 @@ FORTE._onVxgLoaded = function(voxelGrid) {
         }
     }
     FORTE.stressAnalysis.setBoundary(boundaryVoxels);
+    // FORTE._topyUI.setBoundary(boundaryVoxels)
 
+    FORTE.stressAnalysis.analyze();
 }
 
 $(document).on('keydown', function(e) {
