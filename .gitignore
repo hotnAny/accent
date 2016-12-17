@@ -1,2 +1,8 @@
 things/
 sandbox/
+*.strs
+*.disp
+*.K
+*.B
+*.C
+*.pyc
