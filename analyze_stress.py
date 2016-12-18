@@ -6,9 +6,10 @@
 #
 #   by xiangchen@acm.org
 #
+#   ! require numpy, pysparse
+#
 ##########################################################################
 
-# require numpy, pysparse
 
 from __future__ import print_function
 
@@ -18,15 +19,15 @@ T = int(round(time.time() * 1000))
 t0 = T
 
 
-def log(msg):
+def _log(msg):
     global T
     t = int(round(time.time() * 1000))
     if msg != None:
-        print(msg + ':' + str(t - T) + 'ms')
+        print(msg + ': ' + str(t - T) + 'ms')
     T = t
     return t
 
-log(None)
+_log(None)
 
 import argparse
 import json
@@ -37,16 +38,14 @@ from math import sqrt
 from pysparse import spmatrix, itsolvers, precon, superlu
 import struct
 
-import xac_stress_test as test
-
-log('importing everything')
+_log('importing everything')
 
 global Ke, B, C
 Ke = np.load('H8.K')
 B = np.matrix(np.load('H8.B'))
 C = np.matrix(np.load('H8.C'))
 
-log('global constant variables')
+_log('global constant variables')
 
 
 def _save(data, name):
@@ -56,7 +55,11 @@ def _save(data, name):
     print('saved to ' + name)
 
 
-def node_nums_3d(nelx, nely, nelz, mpx, mpy, mpz):
+def _node_nums_3d(nelx, nely, nelz, mpx, mpy, mpz):
+    """
+    adopted from Topy (https://github.com/williamhunter/topy)
+    compute node number based on element number
+    """
     innback = np.array([0, 1, nely + 1, nely + 2])  # initial node numbers at back
     enback = nely * (mpx - 1) + mpy
     nnback = innback + enback + mpx - 1
@@ -82,6 +85,9 @@ def _normsq(v):
 
 
 def _on_same_side(p1, p2, a, b):
+    """
+    tell if p1 and p2 are on the same side as segment ab
+    """
     ab = _sub(b, a)
     cp1 = _cross(ab, _sub(p1, a))
     cp2 = _cross(ab, _sub(p2, a))
@@ -96,6 +102,9 @@ def _on_same_side(p1, p2, a, b):
 
 
 def _in_triangle(v, va, vb, vc):
+    """
+    tell if v is inside a triangle define by va, vb and vc
+    """
     return _on_same_side(v, va, vb, vc) and \
         _on_same_side(v, vb, va, vc) and \
         _on_same_side(v, vc, va, vb)
@@ -103,13 +112,14 @@ def _in_triangle(v, va, vb, vc):
 
 def _voxelize(bstl, n):
     """
+    voxelize a mesh
     input:
         bstl - path to a binary stl file
         n - max # of voxels along x, y and z
     loading triangles from an stl file, adopted from https://github.com/arizonat/py-stl-toolkit
     return: said triangles
     """
-    log(None)
+    _log(None)
 
     print('loading stl file ......', end='')
     try:
@@ -153,7 +163,7 @@ def _voxelize(bstl, n):
     ny = int((vmax[1] - vmin[1]) / dim + 0.5)
     nz = int((vmax[2] - vmin[2]) / dim + 0.5)
 
-    log('done')
+    _log('done')
     print('num of triangles', len(triangles))
 
     vxg = []
@@ -168,7 +178,6 @@ def _voxelize(bstl, n):
             for k in range(0, nx):
                 perc = cntr * 100.0 / (nx * ny * nz)
                 print('voxelizing ...... ' + str(int(perc)) + '%', end='\r')
-                # print('voxelizing ...... ' + str(int(perc)) + '%', end='\r')
 
                 ctrvoxel = [(k + 0.5) * dim, (j + 0.5) * dim, (i + 0.5) * dim]
                 counter = [[0, 0], [0, 0], [0, 0]]
@@ -211,11 +220,14 @@ def _voxelize(bstl, n):
         vxg.append(vxgplane)
 
     print('')
-    log('done')
+    _log('done')
     return {'dimvoxel': dim, 'voxelgrid': vxg}
 
 
 def _load_vxg(vxgpath):
+    """
+    load a voxel grid file
+    """
     vxgraw = open(vxgpath, 'r').read()
     idxdim = vxgraw.index('\n')
     dim = float(vxgraw[:idxdim])
@@ -225,39 +237,31 @@ def _load_vxg(vxgpath):
 
 
 def analyze(vxg, loads, boundary, iter):
-    '''
+    """
     main analysis function
        - vxg: voxel grid (3d list)
        - loads: each consisting of
-           * points
-           * value
+           * points [point set #1, point set #2 ...]
+           * value [value #1, value #2, ...]
        - boundary
            * points
-
+        (points are element numbers)
     output:
        - displacement vector
        - von Mises stress vector
-    '''
+    """
     global Ke, B, C
 
-    # print('mesh or voxel grid path: ' + path)
-    #
-    # # load voxel grid
-    # # vxg = _load_vxg(vxgpath)
-    # vxg = _voxelize(path, n)
     nz = len(vxg)
     ny = len(vxg[0])
     nx = len(vxg[0][0])
-    log('voxelization')
+    _log('voxelization')
     print('voxel grid: ' + str(nx) + ' x ' + str(ny) + ' x ' + str(nz))
 
     # compute stiffness matrix for individual elements
     DOF = 3
     ksize = DOF * (nx + 1) * (ny + 1) * (nz + 1)
     kall = spmatrix.ll_mat_sym(ksize, ksize)
-    # print kall
-    # for i in range(0, ksize):
-    #     kall.append([0] * ksize)
 
     SOLID = 1.000
     VOID = 0.001
@@ -265,14 +269,14 @@ def analyze(vxg, loads, boundary, iter):
         for j in range(0, ny):
             for k in range(0, nx):
                 xe = SOLID if vxg[i][j][k] == 1 else VOID
-                nodes = node_nums_3d(nx, ny, nz, k + 1, j + 1, i + 1)
+                nodes = _node_nums_3d(nx, ny, nz, k + 1, j + 1, i + 1)
                 ind = []
                 for n in nodes:
                     ind.extend([(n - 1) * DOF, (n - 1) * DOF + 1, (n - 1) * DOF + 2])
                 mask = np.ones(len(ind), dtype=int)
                 kall.update_add_mask_sym(Ke * xe, ind, mask)
 
-    log('updated stiffness matrix for all elements')
+    _log('updated stiffness matrix for all elements')
 
     # formulate loading scenario
     rall = [0] * ksize
@@ -283,7 +287,7 @@ def analyze(vxg, loads, boundary, iter):
         indices = indicesset[i]
         value = values[i]
         for idx in indices:
-            nodes = node_nums_3d(nx, ny, nz, idx[0] + 1, idx[1] + 1, idx[2] + 1)
+            nodes = _node_nums_3d(nx, ny, nz, idx[0] + 1, idx[1] + 1, idx[2] + 1)
             for j in range(0, DOF):
                 for k in range(0, len(nodes)):
                     rall[DOF * (nodes[k] - 1) + j] = value[j]
@@ -291,7 +295,7 @@ def analyze(vxg, loads, boundary, iter):
     # formulate boundary condition
     elemmask = [1] * (nx + 1) * (ny + 1) * (nz + 1)
     for idx in boundary:
-        nodes = node_nums_3d(nx, ny, nz, idx[0] + 1, idx[1] + 1, idx[2] + 1)
+        nodes = _node_nums_3d(nx, ny, nz, idx[0] + 1, idx[1] + 1, idx[2] + 1)
         for j in range(0, len(nodes)):
             elemmask[nodes[j] - 1] = 0
 
@@ -303,7 +307,7 @@ def analyze(vxg, loads, boundary, iter):
         else:
             fixeddofs.extend((DOF * i, DOF * i + 1, DOF * i + 2))
 
-    log('formulated loading scenario and boundary condition')
+    _log('formulated loading scenario and boundary condition')
 
     # solve KU=F
     rfree = np.take(rall, freedofs)
@@ -314,7 +318,7 @@ def analyze(vxg, loads, boundary, iter):
     kfree = kall
     kfree.delete_rowcols(rcfixed)
 
-    log('removed constrained elements')
+    _log('removed constrained elements')
 
     if iter:
         kfree = kfree.to_sss()
@@ -329,7 +333,7 @@ def analyze(vxg, loads, boundary, iter):
         lu = superlu.factorize(kfree)
         lu.solve(rfree, dfree)
 
-    log('solved KU=F')
+    _log('solved KU=F')
 
     dall = np.zeros_like(rall)
     for i in range(0, len(freedofs)):
@@ -343,15 +347,14 @@ def analyze(vxg, loads, boundary, iter):
         for j in range(0, ny):
             vmrow = []
             for k in range(0, nx):
-                nodes = node_nums_3d(nx, ny, nz, k + 1, j + 1, i + 1)
+                nodes = _node_nums_3d(nx, ny, nz, k + 1, j + 1, i + 1)
                 disps = []
                 for n in nodes:
                     disps.extend([dall[DOF * (n - 1)], dall[DOF * (n - 1) + 1],
                                   dall[DOF * (n - 1) + 2]])
                 d = np.matrix(disps).transpose()
                 sigma = cb * d
-                # sigma = np.array(sigma).astype('float')
-                # sigmas.append([x[0] for x in sigma])
+
                 s11 = sigma.item(0, 0)
                 s22 = sigma.item(1, 0)
                 s33 = sigma.item(2, 0)
@@ -359,13 +362,13 @@ def analyze(vxg, loads, boundary, iter):
                 s23 = sigma.item(4, 0) * 0.5
                 s31 = sigma.item(5, 0) * 0.5
 
-                # von Mises stress
+                # von Mises stress, see Strava et al.'s Stress Relief paper (SIGGRAPH '12)
                 vmrow.append(sqrt(0.5 * ((s11 - s22)**2 + (s22 - s33)**2 + (s33 - s11)**2 +
                                          6 * (s12**2 + s23**2 + s31**2))))
             vmplane.append(vmrow)
         vonmises.append(vmplane)
 
-    t1 = log('computed stress')
+    t1 = _log('computed stress')
 
     global t0
     print('total time:' + str(t1 - t0) + ' ms')
