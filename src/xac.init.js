@@ -88,7 +88,7 @@ $(document).ready(function() {
     );
 
     XAC.ground.position.y -= yOffset;
-    XAC.scene.add(XAC.ground);
+    // XAC.scene.add(XAC.ground);
 
 
     //

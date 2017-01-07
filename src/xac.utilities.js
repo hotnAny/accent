@@ -92,18 +92,25 @@ function addABall(scene, pt, clr, radius, opacity, fn) {
 	return ball;
 }
 
-function addAnArrow(v1, dir, len) {
+function addAnArrow(v1, dir, len, clr) {
 	var flipped = len < 0;
 
 	var rArrow = 1.5;
 	var lArrow = len == undefined ? 100 : Math.abs(len);
-	var bodyArrow = new XAC.Cylinder(rArrow, lArrow, MATERIALFOCUS).m;
+
+	var mat = clr == undefined ? MATERIALFOCUS : new THREE.MeshBasicMaterial({
+		color: clr,
+		transparent: true,
+		opacity: 1.0
+	});
+
+	var bodyArrow = new XAC.Cylinder(rArrow, lArrow, mat).m;
 
 	var rArrowHead = rArrow * 5;
 	var headArrow = new XAC.Cylinder({
 		r1: 0,
 		r2: rArrowHead
-	}, rArrowHead * 2, MATERIALFOCUS).m;
+	}, rArrowHead * 2, mat).m;
 	headArrow.position.add(new THREE.Vector3(0, 1, 0).multiplyScalar(lArrow * 0.5 + rArrowHead));
 
 	var arrow = new THREE.Object3D();
@@ -188,6 +195,10 @@ Array.prototype.remove = function(elm, compFunc) {
 	}
 }
 
+Array.prototype.removeAt = function(idx) {
+	return this.splice(idx, 1);
+}
+
 Array.prototype.stitch = function(sep) {
 	var str = '';
 	for (var i = this.length - 1; i >= 0; i--) {
@@ -219,6 +230,14 @@ Array.prototype.equals = function(arr) {
 	return true;
 }
 
+Array.prototype.max = function() {
+	var maxVal = Number.MIN_VALUE;
+	for (var i = this.length - 1; i >= 0; i--) {
+		maxVal = Math.max(maxVal, this[i]);
+	}
+	return maxVal;
+}
+
 // similar to numpy's take https://docs.scipy.org/doc/numpy/reference/generated/numpy.take.html
 // arrIndex is of this form:
 //	[[x1, ..., xn], [y1, ..., yn], ... ], where, e.g.,
@@ -234,6 +253,34 @@ Array.prototype.take = function(arrIndex) {
 		}
 	}
 	return taken;
+}
+
+Array.prototype.average = function() {
+	var sum = 0;
+	for (var i = this.length - 1; i >= 0; i--) {
+		if (isNaN(this[i])) {
+			console.error('[Array.average]: containing not numbers: ' + this[i])
+			return;
+		}
+		sum += this[i];
+	}
+
+	return sum / this.length;
+}
+
+Array.prototype.std = function() {
+	var avg = this.average();
+
+	var sqsum = 0;
+	for (var i = this.length - 1; i >= 0; i--) {
+		if (isNaN(this[i])) {
+			console.error('[Array.std]: input arrays contain not numbers: ' + this[i])
+			return;
+		}
+		sqsum += Math.pow(this[i] - avg, 2);
+	}
+
+	return Math.sqrt(sqsum / (this.length - 1));
 }
 
 //	........................................................................................................

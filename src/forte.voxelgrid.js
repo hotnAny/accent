@@ -95,7 +95,6 @@ FORTE.VoxelGrid.prototype.voxelize = function(object, n) {
 
 								if (XAC.isInTriangle(projCtrVoxel, projVa, projVb, projVc)) {
 									counter[l][ctrVoxel.x < ctrFace.x ? 0 : 1] += 1;
-									XAC.isInTriangle(projCtrVoxel, projVa, projVb, projVc)
 								}
 								break;
 
@@ -123,6 +122,7 @@ FORTE.VoxelGrid.prototype.voxelize = function(object, n) {
 				} // end faces
 
 				// check along the three orthogonal axes
+				this._grid[i][j][k] = 0;
 				var isVoxel = false;
 				for (var l = 0; l < NUMDIR; l++) {
 					if (counter[l][0] % 2 == 1 && counter[l][1] % 2 == 1) {
@@ -141,13 +141,15 @@ FORTE.VoxelGrid.prototype.voxelize = function(object, n) {
 	// debugging
 	if (TOSHOWVOXELS)
 		this._scene.remove(object)
-	log(numVoxels, 'voxels')
+	log(this._nx, ' x ', this._ny, ' x ', this._nz, ' = ', numVoxels, 'voxels')
+
+	this._gridRaw = this._grid;
 }
 
 //
 //	load a .vxg file to create a voxel grid with voxel size of dim
 //
-FORTE.VoxelGrid.prototype.load = function(vxgRaw, dim) {
+FORTE.VoxelGrid.prototype.load = function(vxgRaw) {
 	this._grid = [];
 	this._gridRaw = [];
 	// this._dim = dim;
@@ -158,31 +160,33 @@ FORTE.VoxelGrid.prototype.load = function(vxgRaw, dim) {
 	vxgRaw = vxgRaw.slice(idxLine1 + 1);
 
 	// reading voxel info from vxgRaw file object
-	var vxgRawSlices = vxgRaw.split('\n\n');
-	for (var i = 0; i < vxgRawSlices.length; i++) {
-		var sliceRaw = [];
-		var slice = [];
-		var vxgRawRows = vxgRawSlices[i].split('\n');
-		for (var j = 0; j < vxgRawRows.length; j++) {
-			var row = vxgRawRows[j].split(',');
-			var rowRaw = []
-				// binarize it
-			for (var k = 0; k < row.length; k++) {
-				rowRaw.push(row[k]);
-				// NOTE: lower the threshold
-				row[k] = row[k] >= 0.1 ? 1 : 0;
-			}
+	// var vxgRawSlices = vxgRaw.split('\n\n');
+	// for (var i = 0; i < vxgRawSlices.length; i++) {
+	// 	var sliceRaw = [];
+	// 	var slice = [];
+	// 	var vxgRawRows = vxgRawSlices[i].split('\n');
+	// 	for (var j = 0; j < vxgRawRows.length; j++) {
+	// 		var row = vxgRawRows[j].split(',');
+	// 		var rowRaw = []
+	// 			// binarize it
+	// 		for (var k = 0; k < row.length; k++) {
+	// 			rowRaw.push(row[k]);
+	// 			// NOTE: lower the threshold
+	// 			row[k] = row[k] >= 0.1 ? 1 : 0;
+	// 		}
+	//
+	// 		// [obselete] for reasons i can't explain ...
+	// 		// row.reverse();
+	// 		// rowRaw.reverse();
+	//
+	// 		sliceRaw.push(rowRaw);
+	// 		slice.push(row);
+	// 	}
+	// 	this._gridRaw.push(sliceRaw);
+	// 	this._grid.push(slice);
+	// }
 
-			// [obselete] for reasons i can't explain ...
-			// row.reverse();
-			// rowRaw.reverse();
-
-			sliceRaw.push(rowRaw);
-			slice.push(row);
-		}
-		this._gridRaw.push(sliceRaw);
-		this._grid.push(slice);
-	}
+	this._grid = JSON.parse(vxgRaw)
 
 	this._nz = this._grid.length;
 	this._ny = this._grid[0].length;
@@ -233,53 +237,55 @@ FORTE.VoxelGrid.prototype.getBoundingSphereInfo = function() {
 //	(only render voxels on the surface if set hideInside to be true)
 //
 FORTE.VoxelGrid.prototype.render = function(hideInside) {
-
-	for (var i = 0; i < this._nz; i++) {
-		this._table[i] = this._table[i] == undefined ? [] : this._table[i];
-		for (var j = 0; j < this._ny; j++) {
-			this._table[i][j] = this._table[i][j] == undefined ? [] : this._table[i][j];
-			for (var k = 0; k < this._nx; k++) {
-				// this._grid[i][j][k] = this._grid[i][j][k] > 0.5 ? 1 : 0;
-				if (this._grid[i][j][k] == 1 && this._table[i][j][k] == undefined) {
-					if (hideInside != true || this._onSurface(i, j, k)) {
-						var voxel = this._makeVoxel(this._dim, k, j, i, this._material, true);
-						voxel.index = [k, j, i];
-						this._scene.add(voxel);
-						this._voxels.push(voxel);
-						this._table[i][j][k] = voxel;
+	if (this._merged == undefined) {
+		for (var i = 0; i < this._nz; i++) {
+			this._table[i] = this._table[i] == undefined ? [] : this._table[i];
+			for (var j = 0; j < this._ny; j++) {
+				this._table[i][j] = this._table[i][j] == undefined ? [] : this._table[i][j];
+				for (var k = 0; k < this._nx; k++) {
+					// this._grid[i][j][k] = this._grid[i][j][k] > 0.5 ? 1 : 0;
+					if (this._grid[i][j][k] == 1 && this._table[i][j][k] == undefined) {
+						if (hideInside != true || this._onSurface(i, j, k)) {
+							var voxel = this._makeVoxel(this._dim, k, j, i, this._material, true);
+							voxel.index = [k, j, i];
+							this._scene.add(voxel);
+							this._voxels.push(voxel);
+							this._table[i][j][k] = voxel;
+						}
+					} else if (this._grid[i][j][k] != 1 && this._table[i][j][k] != undefined) {
+						var voxel = this._table[i][j][k];
+						this._scene.remove(voxel);
+						XAC.removeFromArray(this._voxels, voxel);
+						this._table[i][j][k] = undefined;
 					}
-				} else if (this._grid[i][j][k] != 1 && this._table[i][j][k] != undefined) {
-					var voxel = this._table[i][j][k];
-					this._scene.remove(voxel);
-					XAC.removeFromArray(this._voxels, voxel);
-					this._table[i][j][k] = undefined;
-				}
-			} // x
-		} // y
-	} // z
-
-	log(this._voxels.length + " voxels added.");
-
-	var mergedGeometry = new THREE.Geometry();
-
-	for (var i = 0; i < this._voxels.length; i++) {
-		var tg = XAC.getTransformedGeometry(this._voxels[i]);
-		var n = mergedGeometry.vertices.length;
-		mergedGeometry.vertices = mergedGeometry.vertices.concat(tg.vertices);
-		var faces = tg.faces.clone();
-		for (var j = 0; j < faces.length; j++) {
-			faces[j].a += n;
-			faces[j].b += n;
-			faces[j].c += n;
-		}
-		mergedGeometry.faces = mergedGeometry.faces.concat(faces);
-		this._scene.remove(this._voxels[i]);
+				} // x
+			} // y
+		} // z
+		log(this._voxels.length + " voxels added.");
+	} else {
+		this._scene.remove(this._merged);
 	}
 
-	var mergedVoxelGrid = new THREE.Mesh(mergedGeometry, this._material);
-
-	this._merged = mergedVoxelGrid;
-	this._scene.add(mergedVoxelGrid);
+	// var mergedGeometry = new THREE.Geometry();
+	//
+	// for (var i = 0; i < this._voxels.length; i++) {
+	// 	var tg = XAC.getTransformedGeometry(this._voxels[i]);
+	// 	var n = mergedGeometry.vertices.length;
+	// 	mergedGeometry.vertices = mergedGeometry.vertices.concat(tg.vertices);
+	// 	var faces = tg.faces.clone();
+	// 	for (var j = 0; j < faces.length; j++) {
+	// 		faces[j].a += n;
+	// 		faces[j].b += n;
+	// 		faces[j].c += n;
+	// 	}
+	// 	mergedGeometry.faces = mergedGeometry.faces.concat(faces);
+	// 	this._scene.remove(this._voxels[i]);
+	// }
+	//
+	// var mergedVoxelGrid = new THREE.Mesh(mergedGeometry, this._material);
+	//
+	// this._merged = mergedVoxelGrid;
+	// this._scene.add(mergedVoxelGrid);
 }
 
 //
@@ -483,7 +489,7 @@ FORTE.VoxelGrid.prototype.saveAs = function(fname) {
 }
 
 FORTE.VoxelGrid.prototype._isContour = function(z, y, x) {
-	if (x == 0 || x == this._nx - 1 || y == 0 || y == this._nyh - 1 || z == 0 || z == this._nz - 1) {
+	if (x == 0 || x == this._nx - 1 || y == 0 || y == this._ny - 1 || z == 0 || z == this._nz - 1) {
 		if (this._grid[z][y][x] == 1) {
 			return true;
 		}
