@@ -2,7 +2,7 @@
 
 ##########################################################################
 #
-#   stress analysis routine
+#   stress analysis routine, v0.1 01/2017
 #
 #   by xiangchen@acm.org
 #
@@ -29,10 +29,10 @@ def _log(msg):
 
 _log(None)
 
+from sys import argv
 import argparse
 import json
 import ast
-from sys import argv
 import numpy as np
 from math import sqrt
 from pysparse import spmatrix, itsolvers, precon, superlu
@@ -40,7 +40,6 @@ import struct
 
 _log('importing everything')
 
-global Ke, B, C
 Ke = np.load('H8.K')
 B = np.matrix(np.load('H8.B'))
 C = np.matrix(np.load('H8.C'))
@@ -68,8 +67,8 @@ def _node_nums_3d(nelx, nely, nelz, mpx, mpy, mpz):
     return nn
 
 
-def _sub(b, a):
-    return [b[0] - a[0], b[1] - a[1], b[2] - a[2]]
+def _sub(u, v):
+    return [u[0] - v[0], u[1] - v[1], u[2] - v[2]]
 
 
 def _dot(u, v):
@@ -86,7 +85,7 @@ def _normsq(v):
 
 def _on_same_side(p1, p2, a, b):
     """
-    tell if p1 and p2 are on the same side as segment ab
+    compute if p1 and p2 are on the same side as segment ab
     """
     ab = _sub(b, a)
     cp1 = _cross(ab, _sub(p1, a))
@@ -115,9 +114,11 @@ def _voxelize(bstl, n):
     voxelize a mesh
     input:
         bstl - path to a binary stl file
-        n - max # of voxels along x, y and z
-    loading triangles from an stl file, adopted from https://github.com/arizonat/py-stl-toolkit
-    return: said triangles
+        n    - max # of voxels along x, y and z
+    return:
+        said triangles
+    reference:
+        loading triangles from an stl file, adopted from https://github.com/arizonat/py-stl-toolkit
     """
     _log(None)
 
@@ -177,9 +178,10 @@ def _voxelize(bstl, n):
             vxgrow = []
             for k in range(0, nx):
                 perc = cntr * 100.0 / (nx * ny * nz)
-                print('voxelizing ...... ' + str(int(perc)) + '%', end='\r')
+                print('voxelizing ............ ' + str(int(perc)) + '%', end='\r')
 
-                ctrvoxel = [(k + 0.5) * dim, (j + 0.5) * dim, (i + 0.5) * dim]
+                ctrvoxel = [vmin[0] + (k + 0.5) * dim, vmin[1] + (j + 0.5)
+                            * dim, vmin[2] + (i + 0.5) * dim]
                 counter = [[0, 0], [0, 0], [0, 0]]
                 for h in range(0, len(triangles)):
                     t = triangles[h]
@@ -245,6 +247,7 @@ def analyze(vxg, loads, boundary, iter):
            * value [value #1, value #2, ...]
        - boundary
            * points
+       - iter: whether to use iterative or direct solver
         (points are element numbers)
     output:
        - displacement vector
@@ -362,7 +365,7 @@ def analyze(vxg, loads, boundary, iter):
                 s23 = sigma.item(4, 0) * 0.5
                 s31 = sigma.item(5, 0) * 0.5
 
-                # von Mises stress, see Strava et al.'s Stress Relief paper (SIGGRAPH '12)
+                # von Mises stress, cf. Strava et al.'s Stress Relief paper (SIGGRAPH '12)
                 vmrow.append(sqrt(0.5 * ((s11 - s22)**2 + (s22 - s33)**2 + (s33 - s11)**2 +
                                          6 * (s12**2 + s23**2 + s31**2))))
             vmplane.append(vmrow)
@@ -375,10 +378,11 @@ def analyze(vxg, loads, boundary, iter):
 
     return {'displacements': dall.tolist(), 'stress': vonmises}
 
-#
-#   main function entry point
-#
+
 if __name__ == "__main__":
+    """
+    main function entry point
+    """
     # setting up parameters
     parser = argparse.ArgumentParser(description='stress analysis')
     parser.add_argument('path', metavar='path', type=str,
