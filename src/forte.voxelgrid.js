@@ -239,26 +239,8 @@ FORTE.VoxelGrid.prototype.render = function(hideInside) {
 		this._scene.remove(this._merged);
 	}
 
-	// var mergedGeometry = new THREE.Geometry();
-	//
-	// for (var i = 0; i < this._voxels.length; i++) {
-	// 	var tg = XAC.getTransformedGeometry(this._voxels[i]);
-	// 	var n = mergedGeometry.vertices.length;
-	// 	mergedGeometry.vertices = mergedGeometry.vertices.concat(tg.vertices);
-	// 	var faces = tg.faces.clone();
-	// 	for (var j = 0; j < faces.length; j++) {
-	// 		faces[j].a += n;
-	// 		faces[j].b += n;
-	// 		faces[j].c += n;
-	// 	}
-	// 	mergedGeometry.faces = mergedGeometry.faces.concat(faces);
-	// 	this._scene.remove(this._voxels[i]);
-	// }
-	//
-	// var mergedVoxelGrid = new THREE.Mesh(mergedGeometry, this._material);
-	//
-	// this._merged = mergedVoxelGrid;
-	// this._scene.add(mergedVoxelGrid);
+	// this._merged = this._mergeVoxels();
+	// this._scene.add(this._merged);
 }
 
 //
@@ -266,7 +248,9 @@ FORTE.VoxelGrid.prototype.render = function(hideInside) {
 //	NOTE: this is a redundant method as _onSurface
 //
 FORTE.VoxelGrid.prototype.renderContour = function(toMerge) {
-	this._pointsContour = [];
+	this._gridSurface = [];
+	var eps = 0.5
+
 	for (var i = 0; i < this._nz; i++) {
 		this._table[i] = this._table[i] == undefined ? [] : this._table[i];
 		for (var j = 0; j < this._ny; j++) {
@@ -278,6 +262,13 @@ FORTE.VoxelGrid.prototype.renderContour = function(toMerge) {
 					if (toMerge == true)
 						this._scene.add(voxel);
 					this._voxels.push(voxel);
+					// a subset of this_grid that is the surface
+					this._gridSurface.push({
+						voxel: voxel,
+						index: [k, j, i],
+						min: new THREE.Vector3(k - eps, j - eps, i - eps).multiplyScalar(this._dim),
+						max: new THREE.Vector3(k + 1 + eps, j + 1 + eps, i + 1 + eps).multiplyScalar(this._dim)
+					});
 					this._table[i][j][k] = voxel;
 				} else { // if (this._grid[i][j][k] != 1 && this._table[i][j][k] != undefined) {
 					var voxel = this._table[i][j][k];
@@ -289,96 +280,32 @@ FORTE.VoxelGrid.prototype.renderContour = function(toMerge) {
 		} // y
 	} // z
 
+	// merging all the voxels to speed up display
 	if (toMerge) {
-		var mergedGeometry = new THREE.Geometry();
-
-		for (var i = 0; i < this._voxels.length; i++) {
-			var tg = XAC.getTransformedGeometry(this._voxels[i]);
-			var n = mergedGeometry.vertices.length;
-			mergedGeometry.vertices = mergedGeometry.vertices.concat(tg.vertices);
-			var faces = tg.faces.clone();
-			for (var j = 0; j < faces.length; j++) {
-				faces[j].a += n;
-				faces[j].b += n;
-				faces[j].c += n;
-			}
-			mergedGeometry.faces = mergedGeometry.faces.concat(faces);
-			this._scene.remove(this._voxels[i]);
-		}
-
-		var mergedVoxelGrid = new THREE.Mesh(mergedGeometry, this._material);
-
-		this._merged = mergedVoxelGrid;
-		this._scene.add(mergedVoxelGrid);
+		this._merged = this._mergeVoxels();
+		// this._scene.add(this._merged);
 	}
 }
 
-//
-//	once a voxel grid is snapped to a medial axis, this method update
-// the grid as the medial axis is updated
-//
-FORTE.VoxelGrid.prototype.updateToMedialAxis = function(axis, node) {
-	//
-	// update the entire voxel grid based on the axis
-	//
-	if (node == undefined) {
-		// clear existing voxels
-		// var nz = this._grid.length;
-		// var ny = this._grid[0].length;
-		// var nx = this._grid[0][0].length;
+FORTE.VoxelGrid.prototype._mergeVoxels = function() {
+	var mergedGeometry = new THREE.Geometry();
 
-		for (var i = 0; i < this._nz; i++) {
-			// EXP: only deal with 2D for now
-			for (var j = 0; j < this._ny; j++) {
-				for (var k = 0; k < this._nx; k++) {
-					this._grid[i][j][k] = 0;
-				}
-			}
+	for (var i = 0; i < this._voxels.length; i++) {
+		var tg = XAC.getTransformedGeometry(this._voxels[i]);
+		var n = mergedGeometry.vertices.length;
+		mergedGeometry.vertices = mergedGeometry.vertices.concat(tg.vertices);
+		var faces = tg.faces.clone();
+		for (var j = 0; j < faces.length; j++) {
+			faces[j].a += n;
+			faces[j].b += n;
+			faces[j].c += n;
 		}
-
-		// for each node, add voxels around it
-		for (var i = axis.nodesInfo.length - 1; i >= 0; i--) {
-			var v = axis.nodesInfo[i].mesh.position;
-			var radius = axis.nodesInfo[i].radius;
-			// this._grid[index[2]][index[1]][index[0]] = axis.NODE;
-			if (radius != undefined) {
-				this._addSphericalVoxels(v, radius);
-			}
-		}
-
-		// for each edge, add voxels along it
-		for (var i = axis.edgesInfo.length - 1; i >= 0; i--) {
-			var v1 = axis.edgesInfo[i].v1.mesh.position;
-			var v2 = axis.edgesInfo[i].v2.mesh.position;
-			var pts = axis.edges[i];
-			var thickness = axis.edgesInfo[i].thickness; // assume the thickness array has been re-interpolated
-
-			if (thickness == undefined || thickness.length <= 0) {
-				continue;
-			}
-
-			for (var j = thickness.length - 1; j >= 0; j--) {
-				// var k = XAC.float2int(j * thickness.length / pts.length);
-				var v = v1.clone().multiplyScalar(1 - j * 1.0 / thickness.length).add(
-					v2.clone().multiplyScalar(j * 1.0 / thickness.length)
-				);
-				this._addSphericalVoxels(v, thickness[j]);
-			}
-		}
-
-		// re-render the voxel grid
-		// for (var i = gVoxels.length - 1; i >= 0; i--) {
-		// 	this._scene.remove(gVoxels[i]);
-		// }
-		this.render(false);
-		// axis.renderAxis();
+		mergedGeometry.faces = mergedGeometry.faces.concat(faces);
+		this._scene.remove(this._voxels[i]);
 	}
-	//
-	// only update one node and its associated edges
-	//
-	else {
-		// TODO
-	}
+
+	var mergedVoxelGrid = new THREE.Mesh(mergedGeometry, this._material);
+	return mergedVoxelGrid;
 }
 
 //
@@ -517,34 +444,93 @@ FORTE.VoxelGrid.prototype._isContour = function(z, y, x) {
 }
 
 //
-//	fix lonely diagonal elements (see where this method is called)
+//	map an object's mesh to voxels
 //
-FORTE.VoxelGrid.prototype._fixLonelyDiag = function(z, y, x) {
-	var diagNeighbors = [
-		[-1, 1, 0],
-		[1, 1, 0]
-	];
+FORTE.VoxelGrid.prototype.map = function(object, faces) {
+	var gridSurface = this._gridSurface.clone();
 
-	for (var i = 0; i < diagNeighbors.length; i++) {
-		var dx = diagNeighbors[i][0];
-		var dy = diagNeighbors[i][1];
-		var dz = diagNeighbors[i][2];
-		xx = XAC.clamp(x + dx, 0, this._nx - 1);
-		yy = XAC.clamp(y + dy, 0, this._ny - 1);
-		zz = XAC.clamp(z + dz, 0, this._nz - 1);
+	object.geometry.computeBoundingBox();
+	var vmin = object.geometry.boundingBox.min;
 
-		if (this._grid[zz][yy][xx] == 1) {
-			var neighbors = [
-				[dx, 0, 0],
-				[0, dy, 0]
-			]
 
-			for (var j = 0; j < neighbors.length; j++) {
-				xx = XAC.clamp(x + neighbors[j][0], 0, this._nx - 1);
-				yy = XAC.clamp(y + neighbors[j][1], 0, this._ny - 1);
-				zz = XAC.clamp(z + neighbors[j][2], 0, this._nz - 1);
-				this._grid[zz][yy][xx] = 0.99;
+	for (var i = 0; i < faces; i++) {
+		var face = object.geometry.faces[i];
+		face.voxels = face.voxels || [];
+
+		if(face.normal == undefined) {
+			object.geometry.computeFaceNormals();
+		}
+
+		var va = object.geometry.vertices[face.a];
+		var vb = object.geometry.vertices[face.b];
+		var vc = object.geometry.vertices[face.c];
+
+		va = va.clone().sub(vmin);
+		vb = vb.clone().sub(vmin);
+		vc = vc.clone().sub(vmin);
+
+		// NOTE: DEBUG
+		// face.center = new THREE.Vector3().addVectors(va, vb).add(vc).divideScalar(3);
+		// console.log(face.normal)
+
+		for (var j = 0; j < gridSurface.length; j++) {
+			// if (gridSurface[j] == undefined) {
+			// 	continue;
+			// }
+
+			if (XAC.testTriBoxIntersection(va, vb, vc, face.normal, gridSurface[j])) {
+				// this._scene.add(gridSurface[j].voxel);
+				face.voxels.push(gridSurface[j].index);
+				// gridSurface[j] = undefined;
 			}
 		}
 	}
+
+	// NOTE: DEBUG
+	// var cnt = 0;
+	// for (var i = 0; i < object.geometry.faces.length; i++) {
+	// 	var face = object.geometry.faces[i];
+	// 	if (face.voxels.length == 0) {
+	// 		cnt += 1;
+	// 		// addABall(this._scene, face.center, 0xff0000, 2, 1)
+	// 		addAnArrow(face.center, face.normal, 5, 0xf0ff0f)
+	// 			// log(face.normal)
+	// 	}
+	// }
+	// log(cnt, '/', object.geometry.faces.length)
+	// this._scene.remove(object);
+	// this._scene.add(this._merged);
 }
+
+//
+//	fix lonely diagonal elements (see where this method is called)
+//
+// FORTE.VoxelGrid.prototype._fixLonelyDiag = function(z, y, x) {
+// 	var diagNeighbors = [
+// 		[-1, 1, 0],
+// 		[1, 1, 0]
+// 	];
+//
+// 	for (var i = 0; i < diagNeighbors.length; i++) {
+// 		var dx = diagNeighbors[i][0];
+// 		var dy = diagNeighbors[i][1];
+// 		var dz = diagNeighbors[i][2];
+// 		xx = XAC.clamp(x + dx, 0, this._nx - 1);
+// 		yy = XAC.clamp(y + dy, 0, this._ny - 1);
+// 		zz = XAC.clamp(z + dz, 0, this._nz - 1);
+//
+// 		if (this._grid[zz][yy][xx] == 1) {
+// 			var neighbors = [
+// 				[dx, 0, 0],
+// 				[0, dy, 0]
+// 			]
+//
+// 			for (var j = 0; j < neighbors.length; j++) {
+// 				xx = XAC.clamp(x + neighbors[j][0], 0, this._nx - 1);
+// 				yy = XAC.clamp(y + neighbors[j][1], 0, this._ny - 1);
+// 				zz = XAC.clamp(z + neighbors[j][2], 0, this._nz - 1);
+// 				this._grid[zz][yy][xx] = 0.99;
+// 			}
+// 		}
+// 	}
+// }
