@@ -159,33 +159,6 @@ FORTE.VoxelGrid.prototype.load = function(vxgRaw) {
 	this._dim = parseFloat(vxgRaw.slice(0, idxLine1));
 	vxgRaw = vxgRaw.slice(idxLine1 + 1);
 
-	// reading voxel info from vxgRaw file object
-	// var vxgRawSlices = vxgRaw.split('\n\n');
-	// for (var i = 0; i < vxgRawSlices.length; i++) {
-	// 	var sliceRaw = [];
-	// 	var slice = [];
-	// 	var vxgRawRows = vxgRawSlices[i].split('\n');
-	// 	for (var j = 0; j < vxgRawRows.length; j++) {
-	// 		var row = vxgRawRows[j].split(',');
-	// 		var rowRaw = []
-	// 			// binarize it
-	// 		for (var k = 0; k < row.length; k++) {
-	// 			rowRaw.push(row[k]);
-	// 			// NOTE: lower the threshold
-	// 			row[k] = row[k] >= 0.1 ? 1 : 0;
-	// 		}
-	//
-	// 		// [obselete] for reasons i can't explain ...
-	// 		// row.reverse();
-	// 		// rowRaw.reverse();
-	//
-	// 		sliceRaw.push(rowRaw);
-	// 		slice.push(row);
-	// 	}
-	// 	this._gridRaw.push(sliceRaw);
-	// 	this._grid.push(slice);
-	// }
-
 	this._grid = JSON.parse(vxgRaw)
 
 	this._nz = this._grid.length;
@@ -292,7 +265,7 @@ FORTE.VoxelGrid.prototype.render = function(hideInside) {
 //	render the contour of the voxel grid
 //	NOTE: this is a redundant method as _onSurface
 //
-FORTE.VoxelGrid.prototype.renderContour = function() {
+FORTE.VoxelGrid.prototype.renderContour = function(toMerge) {
 	this._pointsContour = [];
 	for (var i = 0; i < this._nz; i++) {
 		this._table[i] = this._table[i] == undefined ? [] : this._table[i];
@@ -302,7 +275,8 @@ FORTE.VoxelGrid.prototype.renderContour = function() {
 				if (this._grid[i][j][k] == 1 && this._table[i][j][k] == undefined && this._isContour(i, j, k)) {
 					var voxel = this._makeVoxel(this._dim, k, j, i, this._material, true);
 					voxel.index = [k, j, i];
-					this._scene.add(voxel);
+					if (toMerge == true)
+						this._scene.add(voxel);
 					this._voxels.push(voxel);
 					this._table[i][j][k] = voxel;
 				} else { // if (this._grid[i][j][k] != 1 && this._table[i][j][k] != undefined) {
@@ -314,6 +288,29 @@ FORTE.VoxelGrid.prototype.renderContour = function() {
 			} // x
 		} // y
 	} // z
+
+	if (toMerge) {
+		var mergedGeometry = new THREE.Geometry();
+
+		for (var i = 0; i < this._voxels.length; i++) {
+			var tg = XAC.getTransformedGeometry(this._voxels[i]);
+			var n = mergedGeometry.vertices.length;
+			mergedGeometry.vertices = mergedGeometry.vertices.concat(tg.vertices);
+			var faces = tg.faces.clone();
+			for (var j = 0; j < faces.length; j++) {
+				faces[j].a += n;
+				faces[j].b += n;
+				faces[j].c += n;
+			}
+			mergedGeometry.faces = mergedGeometry.faces.concat(faces);
+			this._scene.remove(this._voxels[i]);
+		}
+
+		var mergedVoxelGrid = new THREE.Mesh(mergedGeometry, this._material);
+
+		this._merged = mergedVoxelGrid;
+		this._scene.add(mergedVoxelGrid);
+	}
 }
 
 //

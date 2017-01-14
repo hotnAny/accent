@@ -36,7 +36,7 @@ var initPanel = function() {
 				reader.onload = (function(e) {
 					var voxelGrid = new FORTE.VoxelGrid(XAC.scene);
 					voxelGrid.load(e.target.result);
-					voxelGrid.renderContour();
+					voxelGrid.renderContour(true);
 
 					// optimize camera position
 					var boundingSphereInfo = voxelGrid.getBoundingSphereInfo();
