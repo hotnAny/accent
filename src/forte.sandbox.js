@@ -5,14 +5,14 @@ FORTE._test = function() {
     showOrigin(new THREE.Vector3(0, 0, 0));
 }
 
-FORTE._onStlLoaded = function(object) {
+// FORTE._onStlLoaded = function(object) {
     // FORTE.stressAnalysis = new XAC.StressAnalysis(object);
     // XAC.scene.remove(object);
 
     // testStressAnalysis();
     // XAC.scene.remove(object);
     // FORTE.stressAnalysis._voxelGrid.render();
-}
+// }
 
 FORTE._onVxgLoaded = function(voxelGrid) {
     // FORTE._topyUI = new XAC.TopyUI('things/tpd.json');

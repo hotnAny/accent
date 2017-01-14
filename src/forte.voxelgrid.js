@@ -259,7 +259,7 @@ FORTE.VoxelGrid.prototype.renderContour = function(toMerge) {
 				if (this._grid[i][j][k] == 1 && this._table[i][j][k] == undefined && this._isContour(i, j, k)) {
 					var voxel = this._makeVoxel(this._dim, k, j, i, this._material, true);
 					voxel.index = [k, j, i];
-					if (toMerge == true)
+					if (toMerge != true)
 						this._scene.add(voxel);
 					this._voxels.push(voxel);
 					// a subset of this_grid that is the surface
@@ -281,10 +281,10 @@ FORTE.VoxelGrid.prototype.renderContour = function(toMerge) {
 	} // z
 
 	// merging all the voxels to speed up display
-	if (toMerge) {
-		this._merged = this._mergeVoxels();
-		// this._scene.add(this._merged);
-	}
+	// if (toMerge) {
+	// 	this._merged = this._mergeVoxels();
+	// 	// this._scene.add(this._merged);
+	// }
 }
 
 FORTE.VoxelGrid.prototype._mergeVoxels = function() {
@@ -449,15 +449,16 @@ FORTE.VoxelGrid.prototype._isContour = function(z, y, x) {
 FORTE.VoxelGrid.prototype.map = function(object, faces) {
 	var gridSurface = this._gridSurface.clone();
 
-	object.geometry.computeBoundingBox();
+	if (object.geometry.boundingBox == undefined)
+		object.geometry.computeBoundingBox();
 	var vmin = object.geometry.boundingBox.min;
 
 
-	for (var i = 0; i < faces; i++) {
+	for (var i = 0; i < faces.length; i++) {
 		var face = object.geometry.faces[i];
 		face.voxels = face.voxels || [];
 
-		if(face.normal == undefined) {
+		if (face.normal == undefined) {
 			object.geometry.computeFaceNormals();
 		}
 
@@ -479,7 +480,7 @@ FORTE.VoxelGrid.prototype.map = function(object, faces) {
 			// }
 
 			if (XAC.testTriBoxIntersection(va, vb, vc, face.normal, gridSurface[j])) {
-				// this._scene.add(gridSurface[j].voxel);
+				this._scene.add(gridSurface[j].voxel);
 				face.voxels.push(gridSurface[j].index);
 				// gridSurface[j] = undefined;
 			}

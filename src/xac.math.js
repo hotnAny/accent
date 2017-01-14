@@ -68,13 +68,26 @@ numeric.fromBlocks = function(blocks) {
 //	ref: http://fileadmin.cs.lth.se/cs/Personal/Tomas_Akenine-Moller/pubs/tribox.pdf
 //
 XAC.testTriBoxIntersection = function(va, vb, vc, nml, bbox) {
-
     var minmax;
 
     /* test the 3 box normals */
     var boxNormals = [new THREE.Vector3(1, 0, 0), new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 0, 1)];
     var boxMin = [bbox.min.x, bbox.min.y, bbox.min.z];
     var boxMax = [bbox.max.x, bbox.max.y, bbox.max.z];
+
+    var project = function(points, axis) {
+    	var min = 1000;
+    	var max = -1000;
+
+    	for(var i=0; i<points.length; i++) {
+    		var val = axis.dot(points[i]);
+    		min = Math.min(min, val);
+    		max = Math.max(val, max);
+    	}
+
+    	return [min, max];
+    };
+
 
     for (var i = 0; i < 3; i++) {
         minmax = project([va, vb, vc], boxNormals[i]);

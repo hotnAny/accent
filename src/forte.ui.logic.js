@@ -1,10 +1,10 @@
-/*------------------------------------------------------------------------------------*
- *
- * ui logic (event handlers, etc.), based on jquery
- *
- * by xiang 'anthony' chen, xiangchen@acm.org
- *
- *------------------------------------------------------------------------------------*/
+// ........................................................................................................
+//
+//	ui logic (event handlers, etc.), based on jquery
+//
+//	by xiang 'anthony' chen, xiangchen@acm.org
+//
+// ........................................................................................................
 
 var XAC = XAC || {};
 
@@ -28,21 +28,33 @@ var initPanel = function() {
 			var reader = new FileReader();
 			if (files[i].name.endsWith('stl')) {
 				reader.onload = (function(e) {
-					XAC.loadStl(e.target.result, FORTE._onStlLoaded);
+					XAC.loadStl(e.target.result, function(object){
+						FORTE.spec = FORTE.spec || new FORTE.Spec(XAC.renderer.domElement, XAC.scene, XAC.camera);
+						FORTE.spec._object = object;
+						// if(FORTE.voxelGrid != undefined) {
+						// 	FORTE.voxelGrid.map(FORTE.spec._object);
+						// }
+					});
 				});
 			}
 			// visualizing voxel grid
 			else if (files[i].name.endsWith('vxg')) {
 				reader.onload = (function(e) {
-					var voxelGrid = new FORTE.VoxelGrid(XAC.scene);
-					voxelGrid.load(e.target.result);
-					voxelGrid.renderContour(true);
+					FORTE.spec = FORTE.spec || new FORTE.Spec(XAC.renderer.domElement, XAC.scene, XAC.camera);
+					FORTE.spec._voxelGrid = new FORTE.VoxelGrid(XAC.scene);
+					FORTE.spec._voxelGrid.load(e.target.result);
+					time();
+					FORTE.spec._voxelGrid.renderContour(true);
+					time('rendered voxels ...');
+					// if(FORTE.spec != undefined) {
+					// 	FORTE.voxelGrid.map(FORTE.spec._object);
+					// }
 
 					// optimize camera position
-					var boundingSphereInfo = voxelGrid.getBoundingSphereInfo();
-					var r = boundingSphereInfo.vRadius.length();
-					XAC.camera.position.copy(XAC.posCam.clone().normalize().multiplyScalar(r * 2));
-					XAC.mouseCtrls = new THREE.TrackballControls(XAC.camera, undefined, boundingSphereInfo.center);
+					// var boundingSphereInfo = voxelGrid.getBoundingSphereInfo();
+					// var r = boundingSphereInfo.vRadius.length();
+					// XAC.camera.position.copy(XAC.posCam.clone().normalize().multiplyScalar(r * 2));
+					// XAC.mouseCtrls = new THREE.TrackballControls(XAC.camera, undefined, boundingSphereInfo.center);
 
 				});
 			}

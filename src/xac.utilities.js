@@ -1,19 +1,38 @@
-/*------------------------------------------------------------------------------------*
- *
- * useful recurring routines v0.0
- *
- * xiangchen@acm.org, dec 2016
- *
- *------------------------------------------------------------------------------------*/
+// ........................................................................................................
+//
+//	useful recurring routines v0.0
+//
+//	xiangchen@acm.org, dec 2016
+//
+// ........................................................................................................
 
 var XAC = XAC || {};
 
+//
+// useful constants
+//
+XAC.LEFTMOUSE = 1;
+XAC.RIGHTMOUSE = 3;
+XAC.WHEEL = 4;
+
+//
+// simple log
+//
 function log() {
+	for (var i = 0; i < arguments.length; i++) {
+		console.log(arguments[i]);
+	}
+}
+
+//
+// longer log
+//
+function llog() {
 	var strLog = "";
 	for (var i = 0; i < arguments.length; i++) {
 		if (typeof arguments[i] === 'object') {
 			if (Array.isArray(arguments[i])) {
-				if (arguments[i][0].length > 0) {
+				if (arguments[i].length > 0 && arguments[i][0].length > 0) {
 					for (var j = 0; j < arguments[i].length; j++) {
 						log(arguments[i][j]);
 					}
@@ -33,6 +52,9 @@ function log() {
 	console.log(strLog)
 }
 
+//
+//
+//
 function time(desc) {
 	var t = new Date().getTime();
 	if (XAC.t != undefined && desc != undefined) {
@@ -95,7 +117,7 @@ function addABall(scene, pt, clr, radius, opacity, fn) {
 function addAnArrow(v1, dir, len, clr) {
 	var flipped = len < 0;
 
-	var rArrow = 1.5;
+	var rArrow = 0.025 * len;
 	var lArrow = len == undefined ? 100 : Math.abs(len);
 
 	var mat = clr == undefined ? MATERIALFOCUS : new THREE.MeshBasicMaterial({
