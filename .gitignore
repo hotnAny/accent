@@ -6,3 +6,4 @@ sandbox/
 *.B
 *.C
 *.pyc
+*.stl
